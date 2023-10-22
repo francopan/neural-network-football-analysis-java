@@ -109,7 +109,7 @@ public class NeuralNetwork {
 					ArtificialNeuronInput inputAndWeight = inputsNeuronCurrentLayer.get(j);
 					Double previousWeight = inputAndWeight.weight;
 					Double previousOutput = inputAndWeight.input;
-					inputAndWeight.weight = previousWeight + this.learningRate * previousOutput * error;
+					inputAndWeight.weight = (this.momentum * previousWeight) + (this.learningRate * previousOutput * error);
 					neuronCurrentLayer.updateInput(currentLayerStep, inputAndWeight.input, inputAndWeight.weight);
 				}
 			}

@@ -62,15 +62,6 @@ public class NetworkLayer {
 		}
 	}
 
-//	private List<Double> generateWeights(int numberOfInputs, boolean useDefault) {
-//		List<Double> generatedWeights = new ArrayList<>();
-//		for (int i = 0; i < numberOfInputs; i++) {
-//			generatedWeights.add(useDefault ? 1.0 : this.generateRandom());
-//		}
-//		return generatedWeights;
-//
-//	}
-
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
