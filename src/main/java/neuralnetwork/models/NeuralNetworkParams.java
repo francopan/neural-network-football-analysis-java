@@ -6,16 +6,16 @@ import neuralnetwork.enums.ActivationFunctionEnum;
 
 public class NeuralNetworkParams {
 	private List<NetworkLayerParam> layersParams;
-	private List<ArtificialNeuronInput> inputsAndWeightsFirstLayer;
+	private List<Double> inputs;
 	private ActivationFunctionEnum function;
 	private Double momentum;
 	private Double learningRate;
 
 	public NeuralNetworkParams(List<NetworkLayerParam> layersParams,
-			List<ArtificialNeuronInput> inputsAndWeightsFirstLayer, ActivationFunctionEnum function, Double momentum,
+			List<Double> inputs, ActivationFunctionEnum function, Double momentum,
 			Double learningRate) {
 		this.layersParams = layersParams;
-		this.inputsAndWeightsFirstLayer = inputsAndWeightsFirstLayer;
+		this.inputs = inputs;
 		this.function = function;
 		this.momentum = momentum;
 		this.learningRate = learningRate;
@@ -29,8 +29,8 @@ public class NeuralNetworkParams {
 		return layersParams;
 	}
 
-	public List<ArtificialNeuronInput> getInputsAndWeightsFirstLayer() {
-		return inputsAndWeightsFirstLayer;
+	public List<Double> getInputs() {
+		return this.inputs;
 	}
 
 	public Double getMomentum() {

@@ -9,19 +9,26 @@ public class ActivationFunction {
 		case ReLu: {
 			return rectifiedLinearFunction(value);
 		}
-		case Sigmoid:
-		default: {
+		case Sigmoid: {
 			return sigmoid(value);
+		}
+		case Copy:
+		default: {
+			return copy(value);
 		}
 		}
 	}
 
 	private static double rectifiedLinearFunction(double x) {
-		return Math.max(0, x);
+		return Math.max(0.0, x);
 	}
 
 	private static double sigmoid(double x) {
 		return 1 / (1 + Math.exp(-x));
+	}
+
+	private static double copy(double x) {
+		return x;
 	}
 
 }

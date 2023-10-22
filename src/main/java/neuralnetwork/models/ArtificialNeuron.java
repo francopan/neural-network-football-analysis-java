@@ -1,19 +1,17 @@
 package neuralnetwork.models;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ArtificialNeuron {
-	public String id;
-	public List<ArtificialNeuronInput> inputs;
-	public Double summation;
-	public List<Double> outputs;
-	public Double error;
+	private String id;
+	private List<ArtificialNeuronInput> inputs;
+	private Double summation;
+	private Double output;
+	private Double error;
 
 	public ArtificialNeuron(List<ArtificialNeuronInput> inputs) {
 		this.inputs = inputs;
-		this.outputs = new ArrayList<>();
-		this.outputs.stream().map(e -> e = 0.0);
+		this.output = 0.0;
 		this.error = 0.0;
 	}
 
@@ -29,31 +27,63 @@ public class ArtificialNeuron {
 		}
 		return sum;
 	}
+
+	public String getId() {
+		return this.id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public List<ArtificialNeuronInput> getInputs() {
+		return this.inputs;
+	}
 	
+	public void addInput(Integer index, String id, Double input, Double weight) {
+		ArtificialNeuronInput ani = new ArtificialNeuronInput(id,input,weight);
+		this.inputs.add(ani);
+	}
+	
+	public void updateInput(Integer index, Double input, Double weight) {
+		ArtificialNeuronInput ani = this.inputs.get(index);
+		if (ani != null) {
+			ani.input = input;
+			ani.weight = weight;
+			this.inputs.set(index, ani);
+		}
+	}
+
 	public Double getError() {
 		return this.error;
 	}
-	
+
 	public void setError(Double error) {
 		this.error = error;
 	}
 	
-	@Override
-	public String toString() {
-		return "ArtificialNeuron { Inputs : " + inputs.toString() + ", Summation: " + summation + ", Output: " + outputs.toString()
-				+ "}";
+	public Double getSummation() {
+		return this.summation;
 	}
-
-	public List<Double> getOutputs() {
-		return this.outputs;
-	}
-
+	
 	public void setSummation(double d) {
 		this.summation = d;
 
 	}
 
-	public Double getSummation() {
-		return this.summation;
+	public Double getOutput() {
+		return this.output;
+	}
+
+	
+	public void setOutput(Double output) {
+		this.output = output;
+
+	}
+	
+	@Override
+	public String toString() {
+		return "ArtificialNeuron { Inputs : " + inputs.toString() + ", Summation: " + this.getSummation() + ", Output: "
+			+ this.getOutput() + ", Error:" +  this.getError() + "}";
 	}
 }

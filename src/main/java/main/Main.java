@@ -4,38 +4,75 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import dataset.enums.MatchResult;
 import dataset.models.FootballMatch;
 import dataset.utils.Utils;
 import neuralnetwork.enums.ActivationFunctionEnum;
 import neuralnetwork.models.ArtificialNeuron;
-import neuralnetwork.models.ArtificialNeuronInput;
 import neuralnetwork.models.NetworkLayerParam;
 import neuralnetwork.models.NeuralNetwork;
 import neuralnetwork.models.NeuralNetworkParams;
 
 public class Main {
-	static List<Integer> layersNeurons = Arrays.asList(12, 6, 3);
+	static List<Integer> layersNeurons = Arrays.asList(12, 12, 6, 3);
 	static Double bias = 0.0;
-	static Double momentum = 0.9;
+	static Double momentum = 0.8;
 	static Double learningRate = 0.2;
 
 	public static void main(String[] args) {
+
+		Integer epochs = 100;
+		Double trainPercentage = 0.8;
+
 		try {
 			List<FootballMatch> matches = Utils.readCSV("/dataset_football.csv", ';');
 			NeuralNetwork nn = createFootballMatchNeuralNetwork(matches.get(0), layersNeurons, bias);
-			for (int i = 0; i < matches.size(); i++) {
-				nn.propagateToNextLayer();
-				nn.propagateToNextLayer();
-				nn.propagateToNextLayer();
-				nn.backPropagation();
-				if ((i + 1) < matches.size()) {
-					nextMatch(nn, matches.get(i + 1));
-					nn.resetCurrentLayer();
-				}
-			}
+			int trainSize = (int) (matches.size() * trainPercentage);
+			train(epochs, matches.subList(0, trainSize), nn);
+			test(matches.subList(trainSize, matches.size()), nn);
+			System.out.println(nn);
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
+	}
+
+	private static void test(List<FootballMatch> data, NeuralNetwork nn) {
+		for (int i = 0; i < data.size() - 1; i++) {
+			List<Double> expectedResult = getExpectedResult(data.get(i).fullTimeResult);
+			nextMatch(nn, data.get(i));
+			for (int l = 0; l < nn.getLayers().size(); l++) {
+				nn.propagateToNextLayer();
+			}
+			System.out.println(expectedResult + " - " + nn.getLayers().get(layersNeurons.size() - 1).getOutputs());
+		}
+	}
+
+	private static void train(Integer epochs, List<FootballMatch> data, NeuralNetwork nn) {
+		for (int k = 0; k < epochs; k++) {
+			for (int i = 0; i < data.size(); i++) {
+				for (int l = 0; l < nn.getLayers().size(); l++) {
+					nn.propagateToNextLayer();
+				}
+				List<Double> expectedResult = getExpectedResult(data.get(i).fullTimeResult);
+				nn.backPropagation(expectedResult);
+				if ((i + 1) < data.size()) {
+					nextMatch(nn, data.get(i + 1));
+				}
+			}
+			System.out.println("Epoch: " + k);
+		}
+	}
+
+	private static List<Double> getExpectedResult(MatchResult matchResult) {
+		switch (matchResult) {
+		case HomeWin:
+			return List.of(1.0, 0.0, 0.0);
+		case Draw:
+			return List.of(0.0, 1.0, 0.0);
+		case AwayWin:
+			return List.of(0.0, 0.0, 1.0);
+		}
+		return null;
 	}
 
 	/**
@@ -46,10 +83,6 @@ public class Main {
 	 * @return List of Double values
 	 */
 	public static List<Double> getInputs(FootballMatch fm) {
-//		Double v1 = fm.getFullTimeHomeGoals() != null ? fm.getFullTimeHomeGoals() : 0.0;
-//		Double v2 = fm.getFullTimeAwayGoals() != null ? fm.getFullTimeAwayGoals() : 0.0;
-//		Double v4 = fm.getHalfTimeHomeGoals() != null ? fm.getHalfTimeHomeGoals() : 0.0;
-//		Double v5 = fm.getHalfTimeAwayGoals() != null ? fm.getHalfTimeAwayGoals() : 0.0;
 		Double v7 = fm.getHomeShots() != null ? fm.getHomeShots() : 0.0;
 		Double v8 = fm.getAwayShots() != null ? fm.getAwayShots() : 0.0;
 		Double v9 = fm.getHomeShotsOnTarget() != null ? fm.getHomeShotsOnTarget() : 0.0;
@@ -77,28 +110,28 @@ public class Main {
 	 */
 	public static NeuralNetwork createFootballMatchNeuralNetwork(FootballMatch fm, List<Integer> layersNeurons,
 			Double bias) {
-		List<ArtificialNeuronInput> inputsAndWeightsFirstLayer = new ArrayList<>();
-		for (Double i : getInputs(fm)) {
-			inputsAndWeightsFirstLayer.add(new ArtificialNeuronInput("0", i, 0.0));
-		}
+		List<Double> inputs = getInputs(fm);
 		List<NetworkLayerParam> layersParams = new ArrayList<>();
 		for (Integer numberOfNeurons : layersNeurons) {
 			layersParams.add(new NetworkLayerParam(numberOfNeurons, bias));
 		}
-		NeuralNetworkParams networkParams = new NeuralNetworkParams(layersParams, inputsAndWeightsFirstLayer,
+		NeuralNetworkParams networkParams = new NeuralNetworkParams(layersParams, inputs,
 				ActivationFunctionEnum.Sigmoid, momentum, learningRate);
 		return new NeuralNetwork(networkParams);
 	}
 
 	public static NeuralNetwork nextMatch(NeuralNetwork nn, FootballMatch fm) {
 		List<Double> newInputs = getInputs(fm);
+		int j = 0;
 		if (nn.getLayers().get(0) != null) {
 			for (ArtificialNeuron an : nn.getLayers().get(0).getNeurons()) {
-				for (int i = 0; i < an.inputs.size(); i++) {
-					an.inputs.set(i, new ArtificialNeuronInput("0", newInputs.get(i), an.inputs.get(i).weight));
+				for (int i = 0; i < an.getInputs().size(); i++) {
+					an.updateInput(i, newInputs.get(j), an.getInputs().get(i).weight);
 				}
+				j++;
 			}
 		}
+		nn.resetCurrentLayerCounter();
 		return nn;
 	}
 
