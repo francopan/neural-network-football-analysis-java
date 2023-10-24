@@ -1,8 +1,9 @@
 package neuralnetwork.models;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class ArtificialNeuron {
+public class ArtificialNeuron implements Cloneable {
 	private String id;
 	private List<ArtificialNeuronInput> inputs;
 	private Double summation;
@@ -39,12 +40,12 @@ public class ArtificialNeuron {
 	public List<ArtificialNeuronInput> getInputs() {
 		return this.inputs;
 	}
-	
+
 	public void addInput(Integer index, String id, Double input, Double weight) {
-		ArtificialNeuronInput ani = new ArtificialNeuronInput(id,input,weight);
+		ArtificialNeuronInput ani = new ArtificialNeuronInput(id, input, weight);
 		this.inputs.add(ani);
 	}
-	
+
 	public void updateInput(Integer index, Double input, Double weight) {
 		ArtificialNeuronInput ani = this.inputs.get(index);
 		if (ani != null) {
@@ -61,11 +62,11 @@ public class ArtificialNeuron {
 	public void setError(Double error) {
 		this.error = error;
 	}
-	
+
 	public Double getSummation() {
 		return this.summation;
 	}
-	
+
 	public void setSummation(double d) {
 		this.summation = d;
 
@@ -75,15 +76,32 @@ public class ArtificialNeuron {
 		return this.output;
 	}
 
-	
 	public void setOutput(Double output) {
 		this.output = output;
 
 	}
-	
+
 	@Override
 	public String toString() {
 		return "ArtificialNeuron { Inputs : " + inputs.toString() + ", Summation: " + this.getSummation() + ", Output: "
-			+ this.getOutput() + ", Error:" +  this.getError() + "}";
+				+ this.getOutput() + ", Error:" + this.getError() + "}";
+	}
+
+	public ArtificialNeuron clone() {
+
+		List<ArtificialNeuronInput> inputs = new ArrayList<>();
+
+		for (ArtificialNeuronInput input : this.inputs) {
+			ArtificialNeuronInput newInput = input.clone();
+			inputs.add(newInput);
+		}
+
+		ArtificialNeuron newArtificialNeuron = new ArtificialNeuron(inputs);
+		newArtificialNeuron.setId(this.id);
+		newArtificialNeuron.setSummation(this.summation != null ? this.summation : 0.0);
+		newArtificialNeuron.setError(this.error != null ? this.error : 0.0);
+		newArtificialNeuron.setOutput(this.output != null ? this.output : 0.0);
+
+		return newArtificialNeuron;
 	}
 }

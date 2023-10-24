@@ -6,14 +6,16 @@ import java.util.stream.Collectors;
 
 import neuralnetwork.enums.ActivationFunctionEnum;
 
-public class NeuralNetwork {
+public class NeuralNetwork implements Cloneable {
 	private List<NetworkLayer> layers;
 	private Double momentum = 0.0;
 	private Double learningRate = 0.0;
 	private Integer currentLayerStep = 0;
 	private ActivationFunctionEnum function;
+	private NeuralNetworkParams params;
 
 	public NeuralNetwork(NeuralNetworkParams params) {
+		this.params = params;
 		this.layers = new ArrayList<>();
 		this.function = params.getFunction();
 		this.momentum = params.getMomentum();
@@ -37,13 +39,54 @@ public class NeuralNetwork {
 			previousNumberOfNeurons = numberOfNeurons;
 		}
 	}
+	
+	public List<NetworkLayer> getLayers() {
+		return this.layers;
+	}
+	
+	public Double getMomentum() {
+		return momentum;
+	}
+
+	public void setMomentum(Double momentum) {
+		this.momentum = momentum;
+	}
+
+	public Double getLearningRate() {
+		return learningRate;
+	}
+
+	public void setLearningRate(Double learningRate) {
+		this.learningRate = learningRate;
+	}
+
+	public Integer getCurrentLayerStep() {
+		return currentLayerStep;
+	}
+
+	public void setCurrentLayerStep(Integer currentLayerStep) {
+		this.currentLayerStep = currentLayerStep;
+	}
+
+	public NeuralNetworkParams getParams() {
+		return params;
+	}
+
+	public void setParams(NeuralNetworkParams params) {
+		this.params = params;
+	}
+
+	public ActivationFunctionEnum getFunction() {
+		return function;
+	}
+
+	public void setLayers(List<NetworkLayer> layers) {
+		this.layers = layers;
+	}
+	
 
 	public void resetCurrentLayerCounter() {
 		this.currentLayerStep = 0;
-	}
-
-	public List<NetworkLayer> getLayers() {
-		return this.layers;
 	}
 
 	public List<Double> getResults() {
@@ -115,6 +158,26 @@ public class NeuralNetwork {
 			}
 		}
 	}
+	
+	public NeuralNetwork clone() {
+
+		NeuralNetworkParams newParams = this.params.clone();		
+		NeuralNetwork nn = new NeuralNetwork(newParams);
+		
+		List<NetworkLayer> newLayers = new ArrayList<>();
+
+		for (NetworkLayer nl : this.layers) {
+			newLayers.add(nl.clone());
+		}
+
+		nn.setLayers(newLayers);
+		nn.setMomentum(this.momentum);
+		nn.setLearningRate(this.learningRate);
+		nn.setCurrentLayerStep(this.currentLayerStep);
+		nn.setFunction(this.function);
+		nn.setParams(newParams);
+		return nn;
+	}
 
 	private Double setNeuronError(List<Double> expectedResult, int neuronIndex, ArtificialNeuron neuronCurrentLayer) {
 		Double followingError, currentOutput = neuronCurrentLayer.getOutput();
@@ -138,5 +201,8 @@ public class NeuralNetwork {
 		}
 		return followingError;
 	}
+
+
+	
 
 }

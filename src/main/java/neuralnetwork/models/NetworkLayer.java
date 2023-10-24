@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 import neuralnetwork.enums.ActivationFunctionEnum;
 
-public class NetworkLayer {
+public class NetworkLayer implements Cloneable {
 	private List<ArtificialNeuron> neurons;
 	private double bias;
 	private Random rng;
@@ -29,13 +29,41 @@ public class NetworkLayer {
 		}
 		this.bias = bias;
 	}
-
+	
 	public List<ArtificialNeuron> getNeurons() {
 		return this.neurons;
 	}
 
-	public double getBias() {
-		return this.bias;
+	public Random getRng() {
+		return rng;
+	}
+
+	public void setRng(Random rng) {
+		this.rng = rng;
+	}
+
+	public Double getMinWeight() {
+		return minWeight;
+	}
+
+	public void setMinWeight(Double minWeight) {
+		this.minWeight = minWeight;
+	}
+
+	public Double getMaxWeight() {
+		return maxWeight;
+	}
+
+	public void setMaxWeight(Double maxWeight) {
+		this.maxWeight = maxWeight;
+	}
+
+	public void setNeurons(List<ArtificialNeuron> neurons) {
+		this.neurons = neurons;
+	}
+
+	public void setBias(double bias) {
+		this.bias = bias;
 	}
 
 	public double generateRandom() {
@@ -72,4 +100,28 @@ public class NetworkLayer {
 		});
 		return "NetworkLayer{" + "neurons=[\t" + sb.toString() + "]}";
 	}
+	
+	
+	public NetworkLayer clone() {
+		List<ArtificialNeuron> newNeurons = new ArrayList<>();
+		for (ArtificialNeuron an : this.neurons) {
+			newNeurons.add(an.clone());
+		}		
+		
+		
+		List<Double> newInputs = new ArrayList<>(this.neurons.size());
+		for (int i = 0; i < this.neurons.size(); i++) {
+			newInputs.add(0.0);
+		}
+		NetworkLayer nl = new NetworkLayer(newInputs, this.neurons.size(), this.bias, this.minWeight, this.maxWeight, true);
+
+		nl.setBias(this.bias);
+		nl.setRng(this.rng);
+		nl.setMinWeight(this.minWeight);
+		nl.setMaxWeight(this.maxWeight);
+		nl.setNeurons(newNeurons);
+		return nl;
+	}
+
+	
 }

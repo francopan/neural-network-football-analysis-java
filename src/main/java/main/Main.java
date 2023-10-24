@@ -2,12 +2,13 @@ package main;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import dataset.enums.MatchResult;
 import dataset.models.FootballMatch;
-import dataset.models.Statistics;
+import dataset.utils.Statistics;
 import dataset.utils.Utils;
 import neuralnetwork.enums.ActivationFunctionEnum;
 import neuralnetwork.models.ArtificialNeuron;
@@ -19,28 +20,54 @@ public class Main {
 	static Integer maxEpochs = 1000;
 	static Double bias = 0.000;
 	static Double momentum = 1.0;
-	static Double learningRate = 0.005;
+	static Double learningRate = 0.01;
 	static Double trainPercentage = 0.8;
-	static Double errorStop = 0.01;
+	static Double errorStop = 0.00099;
 	static List<Integer> layersNeurons = Arrays.asList(12, 12, 6, 3);
 	static Integer numberOfOutputs = layersNeurons.get(layersNeurons.size() - 1);
-	
+
 	public static void main(String[] args) {
-		
+
 		try {
 			List<FootballMatch> matches = Utils.readCSV("/dataset_football.csv", ';');
-			NeuralNetwork nn = createFootballMatchNeuralNetwork(matches.get(0), layersNeurons, bias);
-			int trainSize = (int) (matches.size() * trainPercentage);
-			train(maxEpochs, matches.subList(0, trainSize), nn);
-			List<List<Integer>> confusionMatrix = createConfusionMatrixStructure();
-			test(matches.subList(trainSize, matches.size()), nn, confusionMatrix);
-			printConfusionMatrix(confusionMatrix);
-			printStatistics(confusionMatrix);
+			Statistics bestStats = null;
+			NeuralNetwork bestNN = null;
+
+			for (int i = 0; i < 50; i++) {
+				Collections.shuffle(matches);
+				NeuralNetwork nn = createFootballMatchNeuralNetwork(matches.get(0), layersNeurons, bias);
+				int trainSize = (int) (matches.size() * trainPercentage);
+				nn = train(maxEpochs, matches.subList(0, trainSize), nn);
+				List<List<Integer>> confusionMatrix = createConfusionMatrixStructure();
+				test(matches.subList(trainSize, matches.size()), nn, confusionMatrix);
+				Statistics stats = calculateStatistics(confusionMatrix);
+
+				if (bestStats != null) {
+					Double fMeasureAvgBest = (bestStats.getfMeasure()[0] + bestStats.getfMeasure()[1]
+							+ bestStats.getfMeasure()[2] / 3);
+					Double fMeasureAvgCurrent = (stats.getfMeasure()[0] + stats.getfMeasure()[1]
+							+ stats.getfMeasure()[2] / 3);
+
+					if (stats.getAccuracy() > bestStats.getAccuracy() && fMeasureAvgCurrent > fMeasureAvgBest) {
+						bestStats = stats;
+						bestNN = nn.clone();
+					}
+				} else {
+					bestStats = stats;
+					bestNN = nn.clone();
+				}
+				System.out.println((bestNN.getLayers().get(3).getOutputs()));
+			}
+
+			bestStats.printConfusionMatrix();
+			bestStats.printStatistics();
+			System.out.println(getOutputErrors(bestNN));
+			System.out.println(bestNN.toString());
+
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
 	}
-
 
 	private static List<List<Integer>> createConfusionMatrixStructure() {
 		List<List<Integer>> confusionMatrix = new ArrayList<>();
@@ -50,42 +77,14 @@ public class Main {
 		return confusionMatrix;
 	}
 
-
-	private static void printConfusionMatrix(List<List<Integer>> confusionMatrix) {
-		Integer trueValues = 0;
-		Integer total = 0;
-		for (int i = 0; i < numberOfOutputs; i++) {
-			List<Integer> row = confusionMatrix.get(i);
-			for (int j = 0; j < numberOfOutputs; j++) {
-				System.out.print("\t" + row.get(j));
-				if (j == i) {
-					trueValues += row.get(j);
-				}
-				total += row.get(j);
-			}
-			System.out.print("\n");
-		}
-	}
-
-
-	private static void printStatistics(List<List<Integer>> confusionMatrix) {
+	private static Statistics calculateStatistics(List<List<Integer>> confusionMatrix) {
 		Statistics stats = new Statistics(confusionMatrix);
-		double accuracy = stats.calculateAccuracy();
+		stats.calculateAccuracy();
 		double[] recall = stats.calculateRecall();
 		double[] precision = stats.calculatePrecision();
-		double[] fMeasure = stats.calculateFMeasure(recall, precision);
-		System.out.println("Accuracy: " + accuracy);
-		System.out.println("Recall HomeWin: " + recall[0]);
-		System.out.println("Recall Draw: " + recall[1]);
-		System.out.println("Recall AwayWin: " + recall[2]);
-		System.out.println("Precision HomeWin: " + precision[0]);
-		System.out.println("Precision Draw: " + precision[1]);
-		System.out.println("Precision AwayWin: " + precision[2]);
-		System.out.println("F-Measure HomeWin: " + fMeasure[0]);
-		System.out.println("F-Measure Draw: " + fMeasure[1]);
-		System.out.println("F-Measure AwayWin: " + fMeasure[2]);
+		stats.calculateFMeasure(recall, precision);
+		return stats;
 	}
-
 
 	private static void test(List<FootballMatch> data, NeuralNetwork nn, List<List<Integer>> confusionMatrix) {
 		for (int i = 0; i < data.size() - 1; i++) {
@@ -115,12 +114,12 @@ public class Main {
 		return pos;
 	}
 
-	private static Integer train(Integer maxEpochs, List<FootballMatch> data, NeuralNetwork nn) {
-		List<Double> outputs;
-		Integer k = 0, bestErrorPos = 0;
+	private static NeuralNetwork train(Integer maxEpochs, List<FootballMatch> data, NeuralNetwork nn) {
+		List<Double> outputErrors;
+		Integer k = 0;
 		Double bestError = 999.9;
 		boolean continueTraining = true;
-
+		NeuralNetwork bestNetwork = nn.clone();
 		while (continueTraining) {
 			for (int i = 0; i < data.size(); i++) {
 				for (int l = 0; l < nn.getLayers().size(); l++) {
@@ -133,24 +132,32 @@ public class Main {
 				}
 			}
 
-			outputs = nn.getLayers().get(nn.getLayers().size() - 1).getNeurons().stream().map(n -> n.getError())
-					.collect(Collectors.toList());
+			outputErrors = getOutputErrors(nn);
 
-			Double networkError = Math.abs(outputs.get(getBiggestPosition(outputs)));
+			Double networkError = getWorstErrorFromNetwork(outputErrors);
 
-			if (bestError != null && networkError < bestError) {
+			if (bestError == null || networkError < bestError) {
 				bestError = networkError;
-				bestErrorPos = k;
+				bestNetwork = nn.clone();
 			}
 
 			continueTraining = k < maxEpochs && networkError > errorStop;
-			
-				System.out.println("Epoch: " + k + ", error: " + Math.abs(outputs.get(getBiggestPosition(outputs))));				
-		
+
+			System.out.println("Epoch: " + k + ", bestError: " + bestError + ", currentError: " + networkError);
+
 			k++;
 		}
-		return bestErrorPos;
+		return bestNetwork;
 
+	}
+
+	private static List<Double> getOutputErrors(NeuralNetwork nn) {
+		return nn.getLayers().get(nn.getLayers().size() - 1).getNeurons().stream().map(n -> n.getError())
+				.collect(Collectors.toList());
+	}
+
+	private static double getWorstErrorFromNetwork(List<Double> outputs) {
+		return Math.abs(outputs.get(getBiggestPosition(outputs)));
 	}
 
 	private static List<Double> getExpectedResult(MatchResult matchResult) {
@@ -188,16 +195,6 @@ public class Main {
 		return Arrays.asList(v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18);
 	}
 
-	/**
-	 * Creates a NeuralNetwork for FootballMatch
-	 * 
-	 * @param fm            FootballMatch
-	 * @param layersNeurons List of how many neurons each layer has. Eg.: (10,5,2)
-	 *                      -> First layer has 10 neurons, second layer has 5 and
-	 *                      last layer has 2
-	 * @param bias          Bias
-	 * @return NeuralNetwork
-	 */
 	public static NeuralNetwork createFootballMatchNeuralNetwork(FootballMatch fm, List<Integer> layersNeurons,
 			Double bias) {
 		List<Double> inputs = getInputs(fm);

@@ -1,6 +1,6 @@
 package neuralnetwork.models;
 
-public class ArtificialNeuronInput {
+public class ArtificialNeuronInput implements Cloneable {
 	public String id;
 	public Double input;
 	public Double weight;
@@ -18,5 +18,9 @@ public class ArtificialNeuronInput {
 
 	public Double getInput() {
 		return input;
+	}
+
+	public ArtificialNeuronInput clone() {
+		return new ArtificialNeuronInput(this.id,this.input,this.weight);
 	}
 }
